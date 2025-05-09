@@ -132,7 +132,7 @@
     </style>
 </head>
 <body>
-    <img id="background-gif" src="bg.gif" alt="Background GIF">
+    <img id="background-gif" src="wCbtaXs2fuudaLx7ijt5bkuZX6Y-ezgif.com-effects.gif" alt="Background GIF">
     
     <div class="main-container">
         <h1>TURTL3</h1>
@@ -159,6 +159,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js" onerror="handleScriptError('three.min.js')"></script>
     <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/GLTFLoader.js" onerror="handleScriptError('GLTFLoader.js')"></script>
     <script src="https://unpkg.com/three@0.134.0/examples/js/controls/OrbitControls.js" onerror="handleScriptError('OrbitControls.js')"></script>
+    <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/DRACOLoader.js" onerror="handleScriptError('DRACOLoader.js')"></script>
+    <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/KTX2Loader.js" onerror="handleScriptError('KTX2Loader.js')"></script>
+    <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/RGBELoader.js" onerror="handleScriptError('RGBELoader.js')"></script>
     <script>
         if (typeof THREE === 'undefined') {
             console.error('Three.js failed to load. Check CDN or network.');
@@ -185,6 +188,40 @@
         const scene = new THREE.Scene();
         scene.background = null;
         
+        // Create environment map for reflections
+        const envMapUrls = [
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Park2/posx.jpg',
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Park2/negx.jpg',
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Park2/posy.jpg',
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Park2/negy.jpg',
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Park2/posz.jpg',
+            'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Park2/negz.jpg'
+        ];
+        
+        // Load environment map if CubeTextureLoader is available
+        if (THREE.CubeTextureLoader) {
+            const cubeTextureLoader = new THREE.CubeTextureLoader();
+            cubeTextureLoader.setCrossOrigin('anonymous');
+            
+            try {
+                const envMap = cubeTextureLoader.load(envMapUrls, 
+                    // Success callback
+                    (texture) => {
+                        scene.environment = texture;
+                        console.log('Environment map loaded successfully');
+                    },
+                    // Progress callback
+                    undefined,
+                    // Error callback
+                    (error) => {
+                        console.warn('Failed to load environment map:', error);
+                    }
+                );
+            } catch(e) {
+                console.warn('Error setting up environment map:', e);
+            }
+        }
+        
         // Use a responsive aspect ratio
         const updateAspectRatio = () => {
             const container = document.getElementById('canvas-container');
@@ -193,9 +230,18 @@
         
         const camera = new THREE.PerspectiveCamera(65, updateAspectRatio(), 0.1, 1000);
         
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true, 
+            alpha: true,
+            preserveDrawingBuffer: true, // Help with rendering complex materials
+            powerPreference: "high-performance" // Request high performance
+        });
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.physicallyCorrectLights = true; // Use physically correct lighting
+        renderer.outputEncoding = THREE.sRGBEncoding; // Ensure correct color space
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; // Use ACES filmic tone mapping
+        renderer.toneMappingExposure = 1.0; // Set exposure for tone mapping
         
         // Get container dimensions for renderer
         const container = document.getElementById('canvas-container');
@@ -211,10 +257,10 @@
         scene.add(cube);
 
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Increased intensity
         scene.add(ambientLight);
         
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0); // Increased intensity
         directionalLight.position.set(0, 10, 10);
         directionalLight.castShadow = true;
         directionalLight.shadow.mapSize.width = 1024;
@@ -222,14 +268,61 @@
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 50;
         scene.add(directionalLight);
+        
+        // Add point lights from different angles to enhance reflections
+        const pointLight1 = new THREE.PointLight(0xffffff, 1.0);
+        pointLight1.position.set(5, 5, 5);
+        scene.add(pointLight1);
+        
+        const pointLight2 = new THREE.PointLight(0xffffff, 1.0);
+        pointLight2.position.set(-5, -5, 5);
+        scene.add(pointLight2);
+        
+        // Add colored lights to enhance holographic effect
+        const blueLight = new THREE.PointLight(0x0088ff, 1.0);
+        blueLight.position.set(0, 5, -5);
+        scene.add(blueLight);
+        
+        const purpleLight = new THREE.PointLight(0xff00ff, 1.0);
+        purpleLight.position.set(-5, 0, -5);
+        scene.add(purpleLight);
 
         // Model loading
         const loader = new THREE.GLTFLoader();
+        
+        // Enable DRACO compression if available
+        if (THREE.DRACOLoader) {
+            const dracoLoader = new THREE.DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+            loader.setDRACOLoader(dracoLoader);
+        }
+        
+        // Enable KTX2 loading if available
+        if (THREE.KTX2Loader) {
+            const ktx2Loader = new THREE.KTX2Loader();
+            ktx2Loader.setTranscoderPath('https://unpkg.com/three@0.134.0/examples/js/libs/basis/');
+            loader.setKTX2Loader(ktx2Loader);
+        }
+        
         let model;
         const modelPath = './capybara.glb';
         const fallbackModelPath = '';
 
         function loadModel(path, isFallback = false) {
+            // Set up DRACO loader for compressed models if available
+            let dracoLoader;
+            if (THREE.DRACOLoader) {
+                dracoLoader = new THREE.DRACOLoader();
+                dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
+            }
+            
+            // Set up KTX2 loader for textures if available
+            let ktx2Loader;
+            if (THREE.KTX2Loader) {
+                ktx2Loader = new THREE.KTX2Loader();
+                ktx2Loader.setTranscoderPath('https://unpkg.com/three@0.134.0/examples/js/libs/basis/');
+            }
+            
             loader.load(
                 path,
                 (gltf) => {
@@ -269,9 +362,35 @@
                                 if (Array.isArray(node.material)) {
                                     node.material.forEach(mat => {
                                         mat.side = THREE.DoubleSide;
+                                        
+                                        // Enhance rainbow/holographic effect for any material with "glass" in the name
+                                        if (node.name && (node.name.toLowerCase().includes('glass') || 
+                                                        node.name.toLowerCase().includes('lens') ||
+                                                        node.name.toLowerCase().includes('rainbow') ||
+                                                        node.name.toLowerCase().includes('holo'))) {
+                                            mat.roughness = 0.1; // Lower roughness for more reflection
+                                            mat.metalness = 1.0; // Full metalness for reflective surface
+                                            mat.envMapIntensity = 2.0; // Increase environment map intensity
+                                            mat.transparent = true; // Make it transparent
+                                            mat.opacity = 0.8; // Semi-transparent
+                                            mat.refractionRatio = 0.98; // High refraction
+                                        }
                                     });
                                 } else {
                                     node.material.side = THREE.DoubleSide;
+                                    
+                                    // Enhance rainbow/holographic effect for any material with "glass" in the name
+                                    if (node.name && (node.name.toLowerCase().includes('glass') || 
+                                                     node.name.toLowerCase().includes('lens') ||
+                                                     node.name.toLowerCase().includes('rainbow') ||
+                                                     node.name.toLowerCase().includes('holo'))) {
+                                        node.material.roughness = 0.1;
+                                        node.material.metalness = 1.0;
+                                        node.material.envMapIntensity = 2.0;
+                                        node.material.transparent = true;
+                                        node.material.opacity = 0.8;
+                                        node.material.refractionRatio = 0.98;
+                                    }
                                 }
                             }
                         }
