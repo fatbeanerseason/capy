@@ -211,23 +211,8 @@
         scene.add(cube);
 
         // Lighting
-        // Load an HDRI or Environment Texture
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    pmremGenerator.compileEquirectangularShader();
-
-    new THREE.TextureLoader().load(
-        'https://cdn.jsdelivr.net/gh/pmndrs/drei-assets@master/hdri/dikhololo_night_1k.jpg', // Free HDRI
-        (texture) => {
-            const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-            scene.environment = envMap;
-            scene.background = null; // Keep background transparent
-            texture.dispose();
-            pmremGenerator.dispose();
-        },
-        undefined,
-        (err) => console.error('Failed to load HDRI:', err)
-    );
-
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        scene.add(ambientLight);
         
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
         directionalLight.position.set(0, 10, 10);
