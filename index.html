@@ -235,7 +235,9 @@
                 (gltf) => {
                     model = gltf.scene;
                     scene.add(model);
-                    model.position.set(0, 0, 0);
+                    const box = new THREE.Box3().setFromObject(model);
+                    const center = box.getCenter(new THREE.Vector3());
+                    model.position.set(-center.x, -center.y, -center.z);
                     model.rotation.y = 0;
                     model.visible = true;
 
@@ -293,7 +295,9 @@
         // Position camera appropriately for different screen sizes
         function updateCameraPosition() {
             const distance = window.innerWidth < 768 ? 5 : 4;
-            camera.position.set(0, 0, distance);
+            camera.position.set(0, 1.5, distance); // Adjust Y value as needed
+}
+
             
             // Update camera's near and far planes to ensure the model is always visible
             camera.near = 0.01; // Much closer near plane
