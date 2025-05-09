@@ -28,6 +28,7 @@
             text-align: center;
             height: 100vh;
             width: 100vw;
+            background-color: black;
         }
 
         #background-gif {
@@ -53,46 +54,27 @@
         h1 {
             font-family: "Pixelify Sans", sans-serif;
             color: rgb(255, 255, 255);
-            font-size: min(4rem, 15vw); /* Responsive font size */
+            font-size: min(4rem, 15vw);
             padding: 20px 0;
-            width: 100%;
             position: relative;
-            z-index: 10; /* Ensure text is above the 3D model */
-        }
-
-        #canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0; /* Ensure it's behind text */
-            overflow: visible; /* Allow model to extend beyond container */
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
+            z-index: 10;
         }
 
         .words {
             display: flex;
             justify-content: center;
-            flex-wrap: wrap; /* Allow wrapping on small screens */
-            gap: min(50px, 5vw); /* Responsive gap */
-            width: 100%;
+            flex-wrap: wrap;
+            gap: min(50px, 5vw);
             padding: 20px 10px;
             position: relative;
-            z-index: 10; /* Ensure text is above the 3D model */
+            z-index: 10;
         }
 
         .words a {
-            font-size: min(3rem, 8vw); /* Responsive font size */
+            font-size: min(3rem, 8vw);
             font-family: "Pixelify Sans", sans-serif;
             color: rgb(255, 255, 255);
             text-decoration: none;
-            white-space: nowrap;
         }
 
         .words a:hover {
@@ -113,22 +95,6 @@
             max-width: 90%;
             text-align: center;
         }
-
-        /* Media queries for better responsiveness */
-        @media screen and (max-height: 500px) {
-            h1 {
-                font-size: min(3rem, 10vw);
-                padding: 10px 0;
-            }
-            
-            .words {
-                padding: 10px 5px;
-            }
-            
-            .words a {
-                font-size: min(2rem, 6vw);
-            }
-        }
     </style>
 </head>
 <body>
@@ -136,11 +102,6 @@
     
     <div class="main-container">
         <h1>TURTL3</h1>
-        
-        <div id="canvas-container">
-            <div id="error-message">Failed.</div>
-        </div>
-        
         <div class="words">
             <span><a href="https://x.com/I_Am_Turtl3">X</a></span>
             <span><a href="https://t.me/solturtl3">TG</a></span>
@@ -148,210 +109,45 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
     <script>
-        window.handleScriptError = function(scriptName) {
-            console.error(`Failed to load script: ${scriptName}`);
-            const errorDiv = document.getElementById('error-message');
-            errorDiv.textContent = `Failed to load ${scriptName}. Check console.`;
-            errorDiv.style.display = 'block';
-        };
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js" onerror="handleScriptError('three.min.js')"></script>
-    <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/GLTFLoader.js" onerror="handleScriptError('GLTFLoader.js')"></script>
-    <script src="https://unpkg.com/three@0.134.0/examples/js/controls/OrbitControls.js" onerror="handleScriptError('OrbitControls.js')"></script>
-    <script>
-        if (typeof THREE === 'undefined') {
-            console.error('Three.js failed to load. Check CDN or network.');
-            document.getElementById('error-message').textContent = 'Three.js failed to load. Check console.';
-            document.getElementById('error-message').style.display = 'block';
-            throw new Error('Three.js not defined');
-        }
-
-        if (typeof THREE.GLTFLoader === 'undefined') {
-            console.error('GLTFLoader failed to load or is incompatible.');
-            document.getElementById('error-message').textContent = 'GLTFLoader failed to load. Check console.';
-            document.getElementById('error-message').style.display = 'block';
-            throw new Error('GLTFLoader not defined');
-        }
-
-        if (!window.WebGLRenderingContext || !document.createElement('canvas').getContext('webgl')) {
-            alert('WebGL is not supported in this browser. Please use a modern browser like Chrome or Firefox.');
-            document.getElementById('error-message').textContent = 'WebGL not supported.';
-            document.getElementById('error-message').style.display = 'block';
-            throw new Error('WebGL not supported');
-        }
-
-        // Initialize scene, camera, and renderer
         const scene = new THREE.Scene();
-        scene.background = null;
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
         
-        // Use a responsive aspect ratio
-        const updateAspectRatio = () => {
-            const container = document.getElementById('canvas-container');
-            return container.clientWidth / container.clientHeight;
-        };
-        
-        const camera = new THREE.PerspectiveCamera(65, updateAspectRatio(), 0.1, 1000);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // Get container dimensions for renderer
-        const container = document.getElementById('canvas-container');
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        container.appendChild(renderer.domElement);
+        const loader = new THREE.GLTFLoader();
+        loader.load('./capybara.glb', (gltf) => {
+            const model = gltf.scene;
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            model.position.set(-center.x, -center.y, -center.z);
+            const size = box.getSize(new THREE.Vector3());
+            const scaleFactor = window.innerWidth < 768 ? 2 : 3;
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = maxDim > 0 ? scaleFactor / maxDim : 1;
+            model.scale.set(scale, scale, scale);
+            scene.add(model);
+            camera.position.set(0, 0, 4);
+        });
 
-        console.log('Renderer info:', renderer.info);
-
-        // Placeholder cube while model loads
-        const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-        const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-        scene.add(cube);
-
-        // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
         scene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(0, 10, 10);
-        directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 1024;
-        directionalLight.shadow.mapSize.height = 1024;
-        directionalLight.shadow.camera.near = 0.5;
-        directionalLight.shadow.camera.far = 50;
-        scene.add(directionalLight);
-
-        // Model loading
-        const loader = new THREE.GLTFLoader();
-        let model;
-        const modelPath = './capybara.glb';
-        const fallbackModelPath = '';
-
-        function loadModel(path, isFallback = false) {
-            loader.load(
-                path,
-                (gltf) => {
-                    model = gltf.scene;
-                    scene.add(model);
-                    const box = new THREE.Box3().setFromObject(model);
-                    const center = box.getCenter(new THREE.Vector3());
-                    model.position.set(-center.x, -center.y, -center.z);
-                    model.rotation.y = 0;
-                    model.visible = true;
-
-                    const box = new THREE.Box3().setFromObject(model);
-                    const size = box.getSize(new THREE.Vector3());
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    
-                    // Determine scale based on screen size
-                    const scaleFactor = window.innerWidth < 768 ? 2 : 3;
-                    const scale = maxDim > 0 ? scaleFactor / maxDim : 1;
-                    
-                    model.scale.set(scale, scale, scale);
-                    console.log(`Model (${isFallback ? 'fallback' : 'primary'}) loaded:`, { box, scale });
-
-                    // Make sure model is not clipped when zooming
-                    model.traverse((node) => {
-                        if (node.isMesh) {
-                            node.castShadow = true;
-                            node.receiveShadow = true;
-                            
-                            // Ensure materials are properly rendered on both sides
-                            if (node.material) {
-                                if (Array.isArray(node.material)) {
-                                    node.material.forEach(mat => {
-                                        mat.side = THREE.DoubleSide;
-                                    });
-                                } else {
-                                    node.material.side = THREE.DoubleSide;
-                                }
-                            }
-                        }
-                    });
-
-                    document.getElementById('error-message').style.display = 'none';
-                    scene.remove(cube);
-                },
-                (xhr) => {
-                    console.log(`Loading ${path}: ${(xhr.loaded / xhr.total * 100).toFixed(2)}%`);
-                },
-                (error) => {
-                    console.error(`Error loading ${path}:`, error);
-                    if (!isFallback && fallbackModelPath) {
-                        console.log('Attempting fallback model...');
-                        loadModel(fallbackModelPath, true);
-                    } else {
-                        document.getElementById('error-message').textContent = 'Failed to load 3D model. Check console.';
-                        document.getElementById('error-message').style.display = 'block';
-                    }
-                }
-            );
-        }
-
-        loadModel(modelPath);
-
-        // Position camera appropriately for different screen sizes
-        function updateCameraPosition() {
-            const distance = window.innerWidth < 768 ? 5 : 4;
-            camera.position.set(0, 1.5, distance); // Adjust Y value as needed
-}
-
-            
-            // Update camera's near and far planes to ensure the model is always visible
-            camera.near = 0.01; // Much closer near plane
-            camera.far = 1000;  // Much farther far plane
-            camera.updateProjectionMatrix();
-        }
-        
-        updateCameraPosition();
-
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.enableZoom = true;
-        // Removed min and max distance constraints to allow unlimited zooming
 
         function animate() {
             requestAnimationFrame(animate);
-            if (model) {
-                model.rotation.y += 0.01;
-            } else {
-                cube.rotation.y += 0.01; 
-            }
-            controls.update();
             renderer.render(scene, camera);
         }
         animate();
 
-        // Handle resizing
-        function handleResize() {
-            const container = document.getElementById('canvas-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            
-            camera.aspect = width / height;
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
-            
-            updateCameraPosition();
-            
-            // Adjust model scale if it exists
-            if (model) {
-                const box = new THREE.Box3().setFromObject(model);
-                const size = box.getSize(new THREE.Vector3());
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const scaleFactor = window.innerWidth < 768 ? 2 : 3;
-                const newScale = maxDim > 0 ? scaleFactor / maxDim * (width < 768 ? 0.8 : 1) : 1;
-                model.scale.set(newScale, newScale, newScale);
-            }
-        }
-
-        window.addEventListener('resize', handleResize);
-        
-        // Call resize once to set initial dimensions properly
-        setTimeout(handleResize, 100);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
