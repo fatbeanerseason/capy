@@ -251,17 +251,17 @@
                     
                     // Center the model horizontally and vertically
                     model.position.x = -center.x;
-                    model.position.y = -center.y;
+                    model.position.y = -center.y + 2; // Adjust vertical position to be more centered in viewport
                     model.position.z = -center.z;
                     
                     // Set initial rotation to face front
                     model.rotation.y = Math.PI; // Rotate 180 degrees to face front
                     model.visible = true;
 
-                    // Determine scale based on screen size
+                    // Determine scale based on screen size - doubled for larger model
                     const maxDim = Math.max(size.x, size.y, size.z);
-                    const scaleFactor = window.innerWidth < 768 ? 2 : 3;
-                    const scale = maxDim > 0 ? scaleFactor / maxDim : 1;
+                    const scaleFactor = window.innerWidth < 768 ? 4 : 6; // Doubled scale factors
+                    const scale = maxDim > 0 ? scaleFactor / maxDim : 2;
                     
                     model.scale.set(scale, scale, scale);
                     console.log(`Model (${isFallback ? 'fallback' : 'primary'}) loaded:`, { box, center, size, scale });
@@ -310,10 +310,10 @@
 
         loadModel(modelPath);
 
-        // Position camera to properly view the model
+                    // Position camera to properly view the model
         function updateCameraPosition() {
-            const distance = window.innerWidth < 768 ? 10 : 8;
-            camera.position.set(0, 0, distance); // Set camera directly in front of the model
+            const distance = window.innerWidth < 768 ? 15 : 12;
+            camera.position.set(0, 0, distance); // Set camera farther back to see the larger model
             
             // Look at the center of the scene
             camera.lookAt(0, 0, 0);
@@ -366,14 +366,14 @@
                 const box = new THREE.Box3().setFromObject(model);
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scaleFactor = window.innerWidth < 768 ? 2 : 3;
-                const newScale = maxDim > 0 ? scaleFactor / maxDim * (width < 768 ? 0.8 : 1) : 1;
+                const scaleFactor = window.innerWidth < 768 ? 4 : 6; // Doubled scale factors
+                const newScale = maxDim > 0 ? scaleFactor / maxDim * (width < 768 ? 0.8 : 1) : 2;
                 model.scale.set(newScale, newScale, newScale);
                 
                 // Re-center the model after resizing
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.x = -center.x;
-                model.position.y = -center.y;
+                model.position.y = -center.y + 2; // Adjust vertical position to be more centered in viewport
                 model.position.z = -center.z;
             }
         }
