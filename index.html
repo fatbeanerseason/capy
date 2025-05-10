@@ -254,7 +254,7 @@
                     const maxDim = Math.max(size.x, size.y, size.z);
                     
                     // Determine scale based on screen size
-                    const scaleFactor = window.innerWidth < 768 ? 2 : 3;
+                    const scaleFactor = window.innerWidth < 768 ? 1.5 : 2.2; // Reduced scale factors
                     const scale = maxDim > 0 ? scaleFactor / maxDim : 1;
                     
                     model.scale.set(scale, scale, scale);
@@ -366,7 +366,7 @@
                 model.position.y += verticalOffset;
                 
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scaleFactor = window.innerWidth < 768 ? 2 : 3;
+                const scaleFactor = window.innerWidth < 768 ? 1.5 : 2.2; // Reduced scale factors for smaller model
                 const newScale = maxDim > 0 ? scaleFactor / maxDim * (width < 768 ? 0.8 : 1) : 1;
                 model.scale.set(newScale, newScale, newScale);
             }
