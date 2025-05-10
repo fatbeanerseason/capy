@@ -267,10 +267,10 @@
         function updateCameraPosition() {
             // Position camera to view center of scene
             const distance = window.innerWidth < 768 ? 5 : 4;
-            camera.position.set(0, 0.5, distance); // Raised camera Y position to help see the model better
+            camera.position.set(0, 0.3, distance); // Middle ground for camera height
             
             // Point camera at the center of scene, slightly lower to account for model height
-            camera.lookAt(0, 0.7, 0); // Looking at middle of model to see everything
+            camera.lookAt(0, 0.4, 0); // Middle ground for camera focus
             
             // Update camera's near and far planes to ensure the model is always visible
             camera.near = 0.01; // Much closer near plane
@@ -284,7 +284,7 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.enableZoom = true;
-        controls.target.set(0, 0.7, 0); // Orbit around middle of model
+        controls.target.set(0, 0.4, 0); // Middle ground for orbit center
         controls.update();
 
         function animate() {
