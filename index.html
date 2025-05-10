@@ -160,195 +160,135 @@
     <script src="https://unpkg.com/three@0.134.0/examples/js/loaders/GLTFLoader.js" onerror="handleScriptError('GLTFLoader.js')"></script>
     <script src="https://unpkg.com/three@0.134.0/examples/js/controls/OrbitControls.js" onerror="handleScriptError('OrbitControls.js')"></script>
     <script>
-        if (typeof THREE === 'undefined') {
-            console.error('Three.js failed to load. Check CDN or network.');
-            document.getElementById('error-message').textContent = 'Three.js failed to load. Check console.';
+        // Simple check for required libraries
+        if (typeof THREE === 'undefined' || 
+            typeof THREE.GLTFLoader === 'undefined' ||
+            !window.WebGLRenderingContext || 
+            !document.createElement('canvas').getContext('webgl')) {
+            document.getElementById('error-message').textContent = 'Required 3D libraries not available or WebGL not supported.';
             document.getElementById('error-message').style.display = 'block';
-            throw new Error('Three.js not defined');
+            throw new Error('Required 3D libraries or WebGL not available');
         }
 
-        if (typeof THREE.GLTFLoader === 'undefined') {
-            console.error('GLTFLoader failed to load or is incompatible.');
-            document.getElementById('error-message').textContent = 'GLTFLoader failed to load. Check console.';
-            document.getElementById('error-message').style.display = 'block';
-            throw new Error('GLTFLoader not defined');
-        }
-
-        if (!window.WebGLRenderingContext || !document.createElement('canvas').getContext('webgl')) {
-            alert('WebGL is not supported in this browser. Please use a modern browser like Chrome or Firefox.');
-            document.getElementById('error-message').textContent = 'WebGL not supported.';
-            document.getElementById('error-message').style.display = 'block';
-            throw new Error('WebGL not supported');
-        }
-
-        // Initialize scene, camera, and renderer
+        // Initialize scene
         const scene = new THREE.Scene();
-        scene.background = null;
+        scene.background = null; // Transparent background
         
-        // Use a responsive aspect ratio
-        const updateAspectRatio = () => {
-            const container = document.getElementById('canvas-container');
-            return container.clientWidth / container.clientHeight;
-        };
-        
-        const camera = new THREE.PerspectiveCamera(65, updateAspectRatio(), 0.1, 1000);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // Get container dimensions for renderer
+        // Camera setup
         const container = document.getElementById('canvas-container');
+        const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(0, 0, 4); // Position the camera at a fixed distance
+        
+        // Renderer setup
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
-        console.log('Renderer info:', renderer.info);
+        // Add lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
 
-        // Placeholder cube while model loads
+        // Create placeholder while model loads
         const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
         const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
         const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
         scene.add(cube);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-        scene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(0, 10, 10);
-        directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 1024;
-        directionalLight.shadow.mapSize.height = 1024;
-        directionalLight.shadow.camera.near = 0.5;
-        directionalLight.shadow.camera.far = 50;
-        scene.add(directionalLight);
-
-        // Model loading
-        const loader = new THREE.GLTFLoader();
-        let model;
-        const modelPath = './capybara.glb';
-        const fallbackModelPath = '';
-
-        function loadModel(path, isFallback = false) {
-            loader.load(
-                path,
-                (gltf) => {
-                    model = gltf.scene;
-                    scene.add(model);
-                    
-                    // Show model and remove placeholder
-                    model.visible = true;
-                    document.getElementById('error-message').style.display = 'none';
-                    scene.remove(cube);
-                    
-                    // Apply initial positioning and adjustments
-                    updateModelPosition();
-                    adjustCameraDistance();
-                },
-                (xhr) => {
-                    console.log(`Loading ${path}: ${(xhr.loaded / xhr.total * 100).toFixed(2)}%`);
-                },
-                (error) => {
-                    console.error(`Error loading ${path}:`, error);
-                    if (!isFallback && fallbackModelPath) {
-                        console.log('Attempting fallback model...');
-                        loadModel(fallbackModelPath, true);
-                    } else {
-                        document.getElementById('error-message').textContent = 'Failed to load 3D model. Check console.';
-                        document.getElementById('error-message').style.display = 'block';
-                    }
-                }
-            );
-        }
-
-        loadModel(modelPath);
-
-        // Position camera appropriately for different screen sizes
-        function updateCameraPosition() {
-            // Position camera to view center of scene
-            const distance = window.innerWidth < 768 ? 5 : 4;
-            camera.position.set(0, -0.2, distance); // Lowered camera position
-            
-            // Point camera at the center of scene, slightly lower to account for model height
-            camera.lookAt(0, -0.2, 0); // Looking down at model
-            
-            // Update camera's near and far planes to ensure the model is always visible
-            camera.near = 0.01; // Much closer near plane
-            camera.far = 1000;  // Much farther far plane
-            camera.updateProjectionMatrix();
-        }
-        
-        updateCameraPosition();
-
+        // Set up orbit controls
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.enableZoom = true;
-        controls.target.set(0, -0.2, 0); // Looking down at model
-        controls.update();
+        controls.screenSpacePanning = true;
+        
+        // Explicit position values - set these to position the model
+        const MODEL_Y_POSITION = 0; // Adjust this value to move model up/down
+        const MODEL_SCALE = 1.8;    // Adjust this value to change model size
+        
+        // Model loading
+        let model;
+        const loader = new THREE.GLTFLoader();
+        
+        loader.load(
+            './capybara.glb',
+            (gltf) => {
+                // Success - model loaded
+                model = gltf.scene;
+                scene.add(model);
+                
+                // SIMPLE APPROACH: Set fixed position and scale directly
+                model.position.set(0, MODEL_Y_POSITION, 0);
+                model.scale.set(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
+                
+                // Make materials render properly
+                model.traverse((node) => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                        if (node.material) {
+                            if (Array.isArray(node.material)) {
+                                node.material.forEach(mat => { mat.side = THREE.DoubleSide; });
+                            } else {
+                                node.material.side = THREE.DoubleSide;
+                            }
+                        }
+                    }
+                });
+                
+                // Remove placeholder
+                scene.remove(cube);
+                document.getElementById('error-message').style.display = 'none';
+                
+                // Reset camera and controls to focus on model
+                camera.position.set(0, 0, 5);
+                controls.target.set(0, 0, 0);
+                controls.update();
+            },
+            // Progress callback
+            (xhr) => {
+                console.log(`Loading: ${(xhr.loaded / xhr.total * 100).toFixed(2)}%`);
+            },
+            // Error callback
+            (error) => {
+                console.error('Error loading model:', error);
+                document.getElementById('error-message').textContent = 'Failed to load 3D model. Check console.';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        );
 
+        // Animation loop
         function animate() {
             requestAnimationFrame(animate);
+            
             if (model) {
-                model.rotation.y += 0.01;
+                model.rotation.y += 0.01; // Rotate model
             } else {
-                cube.rotation.y += 0.01; 
+                cube.rotation.y += 0.01; // Rotate placeholder
             }
+            
             controls.update();
             renderer.render(scene, camera);
         }
-        animate();
-
-        // Handle resizing
+        
+        // Handle window resizing
         function handleResize() {
-            const container = document.getElementById('canvas-container');
             const width = container.clientWidth;
             const height = container.clientHeight;
             
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
-            
-            updateCameraPosition();
-            
-            // Adjust model scale and position if it exists
-            if (model) {
-                // Recalculate bounding box to ensure proper scaling
-                const box = new THREE.Box3().setFromObject(model);
-                const size = box.getSize(new THREE.Vector3());
-                const center = box.getCenter(new THREE.Vector3());
-                
-                // Reset position to origin based on bounding box
-                model.position.set(-center.x, -center.y, -center.z);
-                
-                // Balance vertical offset to show full model
-                const verticalOffset = size.y * 0.7;
-                model.position.y += verticalOffset;
-                
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const scaleFactor = window.innerWidth < 768 ? 1.5 : 2.2; // Reduced scale factors for smaller model
-                const newScale = maxDim > 0 ? scaleFactor / maxDim * (width < 768 ? 0.8 : 1) : 1;
-                model.scale.set(newScale, newScale, newScale);
-            }
         }
-
-        function handleResize() {
-            const container = document.getElementById('canvas-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
-            
-            updateCameraPosition();
-            updateModelPosition();
-        }
-
+        
         window.addEventListener('resize', handleResize);
         
-        // Call resize once to set initial dimensions properly
-        setTimeout(handleResize, 100);
+        // Start animation loop
+        animate();
     </script>
 </body>
 </html>
