@@ -244,8 +244,8 @@
                     // Center model at origin
                     model.position.set(-center.x, -center.y, -center.z);
                     
-                    // Move the model up further to show the entire model including head
-                    const verticalOffset = size.y * 0.8; // Even larger offset to show the head
+                    // Move the model up significantly more to show the entire model with head
+                    const verticalOffset = size.y * 1.2; // Much larger offset to ensure head is visible
                     model.position.y += verticalOffset;
                     
                     model.rotation.y = 0;
@@ -307,10 +307,10 @@
         function updateCameraPosition() {
             // Position camera to view center of scene
             const distance = window.innerWidth < 768 ? 5 : 4;
-            camera.position.set(0, 0, distance);
+            camera.position.set(0, 0.5, distance); // Raised camera Y position to help see the model better
             
             // Point camera at the center of scene, slightly lower to account for model height
-            camera.lookAt(0, 0.8, 0); // Looking higher to see the full model including head
+            camera.lookAt(0, 1.2, 0); // Looking much higher to ensure head is visible
             
             // Update camera's near and far planes to ensure the model is always visible
             camera.near = 0.01; // Much closer near plane
@@ -324,7 +324,7 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.enableZoom = true;
-        controls.target.set(0, 0.8, 0); // Set the orbit center higher to show head
+        controls.target.set(0, 1.2, 0); // Set the orbit center much higher to ensure head is visible
         controls.update();
 
         function animate() {
@@ -361,8 +361,8 @@
                 // Reset position to origin based on bounding box
                 model.position.set(-center.x, -center.y, -center.z);
                 
-                // Apply even larger vertical offset to show the head
-                const verticalOffset = size.y * 0.8;
+                // Apply much larger vertical offset to ensure head is visible
+                const verticalOffset = size.y * 1.2;
                 model.position.y += verticalOffset;
                 
                 const maxDim = Math.max(size.x, size.y, size.z);
