@@ -236,54 +236,14 @@
                     model = gltf.scene;
                     scene.add(model);
                     
-                    // Calculate bounding box to center model properly
-                    const box = new THREE.Box3().setFromObject(model);
-                    const size = box.getSize(new THREE.Vector3());
-                    const center = box.getCenter(new THREE.Vector3());
-                    
-                    // Center model at origin
-                    model.position.set(-center.x, -center.y, -center.z);
-                    
-                    // Move the model up significantly more to show the entire model with head
-                    const verticalOffset = size.y * 1.2; // Much larger offset to ensure head is visible
-                    model.position.y += verticalOffset;
-                    
-                    model.rotation.y = 0;
+                    // Show model and remove placeholder
                     model.visible = true;
-
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    
-                    // Determine scale based on screen size
-                    const scaleFactor = window.innerWidth < 768 ? 1.5 : 2.2; // Reduced scale factors
-                    const scale = maxDim > 0 ? scaleFactor / maxDim : 1;
-                    
-                    model.scale.set(scale, scale, scale);
-                    console.log(`Model (${isFallback ? 'fallback' : 'primary'}) loaded:`, { box, center, size, scale });
-
-                    // Make sure model is not clipped when zooming
-                    model.traverse((node) => {
-                        if (node.isMesh) {
-                            node.castShadow = true;
-                            node.receiveShadow = true;
-                            
-                            // Ensure materials are properly rendered on both sides
-                            if (node.material) {
-                                if (Array.isArray(node.material)) {
-                                    node.material.forEach(mat => {
-                                        mat.side = THREE.DoubleSide;
-                                    });
-                                } else {
-                                    node.material.side = THREE.DoubleSide;
-                                }
-                            }
-                        }
-                    });
-
                     document.getElementById('error-message').style.display = 'none';
                     scene.remove(cube);
                     
-                    // Call resize to ensure model is properly positioned
-                    handleResize();
+                    // Apply initial positioning and adjustments
+                    updateModelPosition();
+                    adjustCameraDistance();
                 },
                 (xhr) => {
                     console.log(`Loading ${path}: ${(xhr.loaded / xhr.total * 100).toFixed(2)}%`);
@@ -310,7 +270,7 @@
             camera.position.set(0, 0.5, distance); // Raised camera Y position to help see the model better
             
             // Point camera at the center of scene, slightly lower to account for model height
-            camera.lookAt(0, 1.2, 0); // Looking much higher to ensure head is visible
+            camera.lookAt(0, 0.7, 0); // Looking at middle of model to see everything
             
             // Update camera's near and far planes to ensure the model is always visible
             camera.near = 0.01; // Much closer near plane
@@ -324,7 +284,7 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.enableZoom = true;
-        controls.target.set(0, 1.2, 0); // Set the orbit center much higher to ensure head is visible
+        controls.target.set(0, 0.7, 0); // Orbit around middle of model
         controls.update();
 
         function animate() {
@@ -361,8 +321,8 @@
                 // Reset position to origin based on bounding box
                 model.position.set(-center.x, -center.y, -center.z);
                 
-                // Apply much larger vertical offset to ensure head is visible
-                const verticalOffset = size.y * 1.2;
+                // Balance vertical offset to show full model
+                const verticalOffset = size.y * 0.7;
                 model.position.y += verticalOffset;
                 
                 const maxDim = Math.max(size.x, size.y, size.z);
@@ -370,6 +330,19 @@
                 const newScale = maxDim > 0 ? scaleFactor / maxDim * (width < 768 ? 0.8 : 1) : 1;
                 model.scale.set(newScale, newScale, newScale);
             }
+        }
+
+        function handleResize() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+            
+            updateCameraPosition();
+            updateModelPosition();
         }
 
         window.addEventListener('resize', handleResize);
